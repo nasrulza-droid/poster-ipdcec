@@ -75,3 +75,46 @@ Rekomendasi produksi:
 ## Deploy ke GitHub Pages
 
 Lihat langkah detail di panduan yang akan diberikan setelah setup repo selesai.
+
+## Backend Aman (Baru)
+
+Repository ini sekarang memiliki fondasi backend aman di folder `backend/` dengan fitur:
+
+- Login admin server-side (JWT)
+- Password admin di-hash (bcrypt)
+- Rate limiting login dan endpoint API
+- Penyimpanan data pendaftaran di SQLite
+
+### Menjalankan Backend
+
+```powershell
+cd backend
+copy .env.example .env
+npm install
+npm run init-admin
+npm run dev
+```
+
+Health check:
+
+```text
+GET http://localhost:5001/api/health
+```
+
+### Integrasi Frontend ke Backend
+
+Set atribut `data-api-base-url` di tag `<html>`:
+
+- `index.html`
+- `index-en.html`
+
+Contoh:
+
+```html
+<html lang="id" data-api-base-url="https://api.ipdcec.online">
+```
+
+Catatan:
+
+- Frontend saat ini mengirim ke backend API (jika URL diisi), lalu tetap mengirim ke FormSubmit sebagai fallback operasional.
+- Jika sudah penuh pindah ke backend + file storage sendiri, endpoint FormSubmit bisa dihapus dari form.

@@ -71,6 +71,59 @@ const uiText = {
     : "Koneksi mode cepat gagal. Mencoba kirim ulang dengan mode formulir standar...",
 };
 
+function getApiBaseUrl() {
+  const configured = document.documentElement.dataset.apiBaseUrl || "";
+  return configured.trim().replace(/\/$/, "");
+}
+
+function buildApiPayload(formElement) {
+  const getInput = (name) => formElement.querySelector(`[name="${name}"]`);
+  const getValue = (name) => getInput(name)?.value?.trim() || "";
+  const getFileName = (name) => getInput(name)?.files?.[0]?.name || "";
+
+  return {
+    participant_type: document.querySelector('input[name="participant_type"]:checked')?.value || "Individual",
+    leader_name: getValue("leader_name"),
+    member_2: getValue("member_2"),
+    member_3: getValue("member_3"),
+    email: getValue("email"),
+    whatsapp: getValue("whatsapp"),
+    school_name: getValue("school_name"),
+    country: getValue("country"),
+    poster_title: getValue("poster_title"),
+    subtheme: getValue("subtheme"),
+    files: [
+      getFileName("student_id_or_enrollment"),
+      getFileName("proof_follow_instagram"),
+      getFileName("proof_twibbon"),
+      getFileName("proof_share_poster"),
+      getFileName("poster_final_file"),
+      getFileName("proof_payment"),
+    ].filter(Boolean),
+  };
+}
+
+async function submitToBackendApi(formElement) {
+  const baseUrl = getApiBaseUrl();
+  if (!baseUrl) {
+    return false;
+  }
+
+  const response = await fetch(`${baseUrl}/api/registrations`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(buildApiPayload(formElement)),
+  });
+
+  if (!response.ok) {
+    throw new Error("Backend API submission failed.");
+  }
+
+  return true;
+}
+
 function syncParticipantType() {
   if (!participantTypeOptions || !teamFields) {
     return;
@@ -106,6 +159,8 @@ if (registrationForm) {
     }
 
     try {
+      await submitToBackendApi(registrationForm);
+
       const formData = new FormData(registrationForm);
       const response = await fetch(registrationForm.action, {
         method: "POST",
