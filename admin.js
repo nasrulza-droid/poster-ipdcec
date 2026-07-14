@@ -1,6 +1,22 @@
 const STORAGE_KEY = "ipdcec_registrations_v1";
 const ADMIN_SESSION_KEY = "ipdcec_admin_authed";
 const ADMIN_PASSWORD = "ipdcec-admin-2026";
+const isEnglish = document.documentElement.lang.toLowerCase().startsWith("en");
+
+const statusKeys = ["Baru", "Terverifikasi", "Lolos Administrasi", "Ditolak"];
+const statusLabels = {
+  Baru: isEnglish ? "New" : "Baru",
+  Terverifikasi: isEnglish ? "Verified" : "Terverifikasi",
+  "Lolos Administrasi": isEnglish ? "Admin Passed" : "Lolos Administrasi",
+  Ditolak: isEnglish ? "Rejected" : "Ditolak",
+};
+
+const uiText = {
+  wrongPassword: isEnglish ? "Wrong password." : "Password salah.",
+  deleteConfirm: isEnglish ? "Delete this entry from admin panel?" : "Hapus data ini dari admin panel?",
+  unknownStatus: isEnglish ? "Unknown" : "Tidak diketahui",
+  exportFile: isEnglish ? "ipdcec-registrations-en.csv" : "ipdcec-registrations.csv",
+};
 
 const loginSection = document.getElementById("admin-login");
 const dashboardSection = document.getElementById("admin-dashboard");
@@ -45,10 +61,14 @@ function formatDate(value) {
   if (Number.isNaN(date.getTime())) {
     return "-";
   }
-  return date.toLocaleString("id-ID", {
+  return date.toLocaleString(isEnglish ? "en-US" : "id-ID", {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function labelStatus(status) {
+  return statusLabels[status] || uiText.unknownStatus;
 }
 
 function calculateStats(entries) {
@@ -147,14 +167,13 @@ function renderTable() {
           </td>
           <td>
             <select data-action="status" data-id="${escapeHtml(entry.id)}">
-              <option value="Baru" ${entry.status === "Baru" ? "selected" : ""}>Baru</option>
-              <option value="Terverifikasi" ${entry.status === "Terverifikasi" ? "selected" : ""}>Terverifikasi</option>
-              <option value="Lolos Administrasi" ${entry.status === "Lolos Administrasi" ? "selected" : ""}>Lolos Administrasi</option>
-              <option value="Ditolak" ${entry.status === "Ditolak" ? "selected" : ""}>Ditolak</option>
+              ${statusKeys
+                .map((status) => `<option value="${status}" ${entry.status === status ? "selected" : ""}>${labelStatus(status)}</option>`)
+                .join("")}
             </select>
           </td>
           <td>
-            <button data-action="delete" data-id="${escapeHtml(entry.id)}" type="button">Hapus</button>
+            <button data-action="delete" data-id="${escapeHtml(entry.id)}" type="button">${isEnglish ? "Delete" : "Hapus"}</button>
           </td>
         </tr>
       `;
@@ -220,7 +239,7 @@ function exportCsv() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "ipdcec-registrations.csv";
+  link.download = uiText.exportFile;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -243,7 +262,7 @@ loginForm?.addEventListener("submit", (event) => {
   const password = document.getElementById("admin-password").value;
 
   if (password !== ADMIN_PASSWORD) {
-    loginStatus.textContent = "Password salah.";
+    loginStatus.textContent = uiText.wrongPassword;
     return;
   }
 
@@ -285,7 +304,7 @@ tableBody?.addEventListener("click", (event) => {
   const id = target.dataset.id;
 
   if (action === "delete" && id) {
-    const ok = window.confirm("Hapus data ini dari admin panel?");
+    const ok = window.confirm(uiText.deleteConfirm);
     if (ok) {
       deleteEntry(id);
     }

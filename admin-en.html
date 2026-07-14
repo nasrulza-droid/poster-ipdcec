@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Panel - IPDCEC 2026</title>
     <meta
       name="description"
-      content="Admin panel untuk mengelola data pendaftaran peserta IPDCEC 2026."
+      content="Admin panel to manage IPDCEC 2026 registration data."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -23,30 +23,30 @@
       <div class="brand">IPDCEC 2026 - Admin</div>
       <div class="topbar-actions">
         <div class="lang-switch" aria-label="Language switcher">
-          <a class="lang-pill active" href="admin.html">ID</a>
-          <a class="lang-pill" href="admin-en.html">EN</a>
+          <a class="lang-pill" href="admin.html">ID</a>
+          <a class="lang-pill active" href="admin-en.html">EN</a>
         </div>
-        <a class="topbar-link" href="index.html">Kembali ke Landing Page</a>
+        <a class="topbar-link" href="index-en.html">Back to Landing Page</a>
       </div>
     </header>
 
     <main class="admin-page">
       <section id="admin-login" class="admin-box reveal show">
         <h1>Admin Login</h1>
-        <p class="admin-note">Masukkan kata sandi admin untuk mengelola data pendaftar.</p>
+        <p class="admin-note">Enter admin password to manage participant registrations.</p>
         <form id="login-form" class="admin-login-form">
           <label>
-            Password Admin
+            Admin Password
             <input id="admin-password" type="password" autocomplete="current-password" required />
           </label>
-          <button type="submit" class="btn btn-primary">Masuk</button>
+          <button type="submit" class="btn btn-primary">Sign In</button>
           <p id="login-status" class="small-note" aria-live="polite"></p>
         </form>
       </section>
 
       <section id="admin-dashboard" class="admin-box" hidden>
         <div class="admin-head">
-          <h1>Kelola Data Pendaftaran</h1>
+          <h1>Manage Registration Data</h1>
           <div class="cta-row">
             <button id="export-csv" class="btn btn-secondary" type="button">Export CSV</button>
             <button id="logout-admin" class="btn btn-secondary" type="button">Logout</button>
@@ -55,36 +55,36 @@
 
         <div class="admin-stats">
           <article>
-            <h3>Total Data</h3>
+            <h3>Total Entries</h3>
             <p id="stat-total">0</p>
           </article>
           <article>
-            <h3>Status Baru</h3>
+            <h3>New</h3>
             <p id="stat-baru">0</p>
           </article>
           <article>
-            <h3>Terverifikasi</h3>
+            <h3>Verified</h3>
             <p id="stat-verifikasi">0</p>
           </article>
           <article>
-            <h3>Ditolak</h3>
+            <h3>Rejected</h3>
             <p id="stat-ditolak">0</p>
           </article>
         </div>
 
         <div class="admin-tools">
           <label>
-            Cari Data
-            <input id="search-input" type="text" placeholder="Nama, email, sekolah, judul poster" />
+            Search Data
+            <input id="search-input" type="text" placeholder="Name, email, school, poster title" />
           </label>
           <label>
             Filter Status
             <select id="filter-status">
-              <option value="all">Semua Status</option>
-              <option value="Baru">Baru</option>
-              <option value="Terverifikasi">Terverifikasi</option>
-              <option value="Lolos Administrasi">Lolos Administrasi</option>
-              <option value="Ditolak">Ditolak</option>
+              <option value="all">All Statuses</option>
+              <option value="Baru">New</option>
+              <option value="Terverifikasi">Verified</option>
+              <option value="Lolos Administrasi">Admin Passed</option>
+              <option value="Ditolak">Rejected</option>
             </select>
           </label>
         </div>
@@ -93,20 +93,20 @@
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Waktu</th>
-                <th>Peserta</th>
-                <th>Kontak</th>
-                <th>Sekolah</th>
-                <th>Subtema</th>
+                <th>Time</th>
+                <th>Participant</th>
+                <th>Contact</th>
+                <th>School</th>
+                <th>Subtheme</th>
                 <th>Status</th>
-                <th>Aksi</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody id="admin-table-body"></tbody>
           </table>
         </div>
 
-        <p id="admin-empty" class="small-note" hidden>Belum ada data pendaftaran tersimpan.</p>
+        <p id="admin-empty" class="small-note" hidden>No registration data stored yet.</p>
       </section>
     </main>
 
