@@ -136,6 +136,7 @@ Halaman admin sekarang memakai backend API dengan alur:
 - Ambil data pendaftar dari `/api/registrations/admin`
 - Ubah status/hapus data via endpoint admin terautentikasi
 - Export CSV dari `/api/registrations/admin/export.csv`
+- Lihat audit log admin dari `/api/registrations/admin/logs`
 
 Sebelum dipakai, pastikan:
 

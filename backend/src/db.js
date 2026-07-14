@@ -40,6 +40,15 @@ export async function getDb() {
       subtheme TEXT NOT NULL,
       files_json TEXT NOT NULL DEFAULT '[]'
     );
+
+    CREATE TABLE IF NOT EXISTS admin_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      actor_email TEXT NOT NULL,
+      action TEXT NOT NULL,
+      target_id TEXT,
+      metadata_json TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   return db;

@@ -101,6 +101,13 @@ function toCsv(rows) {
   return lines.join("\n");
 }
 
+async function logAdminAction(db, actorEmail, action, targetId, metadata = {}) {
+  await db.run(
+    "INSERT INTO admin_logs (actor_email, action, target_id, metadata_json) VALUES (?, ?, ?, ?)",
+    [actorEmail || "unknown", action, targetId || null, JSON.stringify(metadata)]
+  );
+}
+
 export function buildRegistrationsRouter(db) {
   const router = express.Router();
 
@@ -198,6 +205,17 @@ export function buildRegistrationsRouter(db) {
     return res.json(rows.map(mapRegistration));
   });
 
+  router.get("/admin/logs", requireAuth, async (_req, res) => {
+    const rows = await db.all(
+      "SELECT id, actor_email, action, target_id, metadata_json, created_at FROM admin_logs ORDER BY created_at DESC, id DESC LIMIT 150"
+    );
+    const logs = rows.map((row) => ({
+      ...row,
+      metadata: JSON.parse(row.metadata_json || "{}"),
+    }));
+    return res.json(logs);
+  });
+
   router.get("/admin/export.csv", requireAuth, async (_req, res) => {
     const rows = await db.all("SELECT * FROM registrations ORDER BY submitted_at DESC");
     const csv = toCsv(rows);
@@ -225,6 +243,8 @@ export function buildRegistrationsRouter(db) {
       return res.status(404).json({ message: "Registration not found." });
     }
 
+    await logAdminAction(db, req.user?.email, "registration.status.update", id, { status });
+
     return res.json({ message: "Status updated." });
   });
 
@@ -235,6 +255,8 @@ export function buildRegistrationsRouter(db) {
     if (!result.changes) {
       return res.status(404).json({ message: "Registration not found." });
     }
+
+    await logAdminAction(db, req.user?.email, "registration.delete", id);
 
     return res.json({ message: "Registration deleted." });
   });

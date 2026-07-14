@@ -12,6 +12,8 @@ const uiText = {
   unknownStatus: isEnglish ? "Unknown" : "Tidak diketahui",
   loginRequired: isEnglish ? "Login session expired. Please sign in again." : "Sesi login habis. Silakan masuk lagi.",
   csvFile: isEnglish ? "ipdcec-registrations-en.csv" : "ipdcec-registrations.csv",
+  loadingLogs: isEnglish ? "Loading activity logs..." : "Memuat log aktivitas...",
+  loadLogsFailed: isEnglish ? "Failed to load activity logs." : "Gagal memuat log aktivitas.",
 };
 
 const statusKeys = ["Baru", "Terverifikasi", "Lolos Administrasi", "Ditolak"];
@@ -28,10 +30,13 @@ const loginForm = document.getElementById("login-form");
 const loginStatus = document.getElementById("login-status");
 const tableBody = document.getElementById("admin-table-body");
 const emptyLabel = document.getElementById("admin-empty");
+const logBody = document.getElementById("admin-log-body");
+const logEmpty = document.getElementById("admin-log-empty");
 const searchInput = document.getElementById("search-input");
 const filterStatus = document.getElementById("filter-status");
 
 let cachedEntries = [];
+let cachedLogs = [];
 
 function getApiBaseUrl() {
   return (document.documentElement.dataset.apiBaseUrl || "").trim().replace(/\/$/, "");
@@ -211,6 +216,36 @@ function renderTable() {
     .join("");
 }
 
+function renderLogs() {
+  if (!logBody || !logEmpty) {
+    return;
+  }
+
+  if (!cachedLogs.length) {
+    logBody.innerHTML = "";
+    logEmpty.hidden = false;
+    return;
+  }
+
+  logEmpty.hidden = true;
+  logBody.innerHTML = cachedLogs
+    .map((log) => {
+      const detail = Object.keys(log.metadata || {}).length
+        ? escapeHtml(JSON.stringify(log.metadata))
+        : "-";
+      return `
+        <tr>
+          <td>${escapeHtml(formatDate(log.created_at))}</td>
+          <td>${escapeHtml(log.actor_email || "-")}</td>
+          <td>${escapeHtml(log.action || "-")}</td>
+          <td>${escapeHtml(log.target_id || "-")}</td>
+          <td><small>${detail}</small></td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
 async function refreshEntries() {
   if (emptyLabel) {
     emptyLabel.hidden = false;
@@ -233,6 +268,24 @@ async function refreshEntries() {
   renderTable();
 }
 
+async function refreshLogs() {
+  if (!logEmpty) {
+    return;
+  }
+
+  logEmpty.hidden = false;
+  logEmpty.textContent = uiText.loadingLogs;
+
+  const response = await apiRequest("/api/registrations/admin/logs");
+  if (!response.ok) {
+    throw new Error(uiText.loadLogsFailed);
+  }
+
+  cachedLogs = await response.json();
+  logEmpty.textContent = isEnglish ? "No admin activity logs yet." : "Belum ada log aktivitas admin.";
+  renderLogs();
+}
+
 async function updateStatus(id, status) {
   const response = await apiRequest(`/api/registrations/admin/${encodeURIComponent(id)}/status`, {
     method: "PATCH",
@@ -247,6 +300,7 @@ async function updateStatus(id, status) {
   }
 
   await refreshEntries();
+  await refreshLogs();
 }
 
 async function deleteEntry(id) {
@@ -259,6 +313,7 @@ async function deleteEntry(id) {
   }
 
   await refreshEntries();
+  await refreshLogs();
 }
 
 async function exportCsv() {
@@ -317,6 +372,7 @@ loginForm?.addEventListener("submit", async (event) => {
     setToken(payload.token);
     showDashboard();
     await refreshEntries();
+    await refreshLogs();
   } catch (error) {
     loginStatus.textContent = error.message || uiText.wrongCredentials;
   }
@@ -390,7 +446,7 @@ tableBody?.addEventListener("click", async (event) => {
 
 if (getToken()) {
   showDashboard();
-  refreshEntries().catch((error) => {
+  Promise.all([refreshEntries(), refreshLogs()]).catch((error) => {
     showLogin(error.message || uiText.loginRequired);
   });
 } else {

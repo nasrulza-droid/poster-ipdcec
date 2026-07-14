@@ -38,6 +38,11 @@ export function buildAuthRouter(db) {
       { expiresIn: "12h" }
     );
 
+    await db.run(
+      "INSERT INTO admin_logs (actor_email, action, target_id, metadata_json) VALUES (?, ?, ?, ?)",
+      [admin.email, "auth.login", null, JSON.stringify({ source: "web" })]
+    );
+
     return res.json({ token, user: { email: admin.email, role: "admin" } });
   });
 
