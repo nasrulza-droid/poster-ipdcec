@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src https://fonts.gstatic.com; connect-src 'self'; base-uri 'self'; frame-ancestors 'none'" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>Admin Panel - IPDCEC 2026</title>
     <meta
       name="description"
@@ -31,85 +34,19 @@
     </header>
 
     <main class="admin-page">
-      <section id="admin-login" class="admin-box reveal show">
-        <h1>Admin Login</h1>
-        <p class="admin-note">Masukkan kata sandi admin untuk mengelola data pendaftar.</p>
-        <form id="login-form" class="admin-login-form">
-          <label>
-            Password Admin
-            <input id="admin-password" type="password" autocomplete="current-password" required />
-          </label>
-          <button type="submit" class="btn btn-primary">Masuk</button>
-          <p id="login-status" class="small-note" aria-live="polite"></p>
-        </form>
-      </section>
-
-      <section id="admin-dashboard" class="admin-box" hidden>
-        <div class="admin-head">
-          <h1>Kelola Data Pendaftaran</h1>
-          <div class="cta-row">
-            <button id="export-csv" class="btn btn-secondary" type="button">Export CSV</button>
-            <button id="logout-admin" class="btn btn-secondary" type="button">Logout</button>
-          </div>
-        </div>
-
-        <div class="admin-stats">
-          <article>
-            <h3>Total Data</h3>
-            <p id="stat-total">0</p>
-          </article>
-          <article>
-            <h3>Status Baru</h3>
-            <p id="stat-baru">0</p>
-          </article>
-          <article>
-            <h3>Terverifikasi</h3>
-            <p id="stat-verifikasi">0</p>
-          </article>
-          <article>
-            <h3>Ditolak</h3>
-            <p id="stat-ditolak">0</p>
-          </article>
-        </div>
-
-        <div class="admin-tools">
-          <label>
-            Cari Data
-            <input id="search-input" type="text" placeholder="Nama, email, sekolah, judul poster" />
-          </label>
-          <label>
-            Filter Status
-            <select id="filter-status">
-              <option value="all">Semua Status</option>
-              <option value="Baru">Baru</option>
-              <option value="Terverifikasi">Terverifikasi</option>
-              <option value="Lolos Administrasi">Lolos Administrasi</option>
-              <option value="Ditolak">Ditolak</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="admin-table-wrap">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Waktu</th>
-                <th>Peserta</th>
-                <th>Kontak</th>
-                <th>Sekolah</th>
-                <th>Subtema</th>
-                <th>Status</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="admin-table-body"></tbody>
-          </table>
-        </div>
-
-        <p id="admin-empty" class="small-note" hidden>Belum ada data pendaftaran tersimpan.</p>
+      <section class="admin-box reveal show">
+        <h1 id="admin-status-title">Panel Admin Dinonaktifkan Demi Keamanan</h1>
+        <p id="admin-status-desc" class="admin-note">
+          Halaman statis publik ini tidak lagi menangani login admin atau data peserta. Dibutuhkan sistem admin backend yang aman.
+        </p>
+        <ul id="admin-status-list" class="small-note">
+          <li>Password di sisi klien dan localStorage tidak aman untuk produksi.</li>
+          <li>Akses admin harus memakai autentikasi sisi server dan pemeriksaan role.</li>
+          <li>Data pendaftaran wajib disimpan di database yang terlindungi.</li>
+        </ul>
       </section>
     </main>
 
-    <script src="admin.js?v=20260714-3"></script>
+    <script src="admin.js?v=20260714-4"></script>
   </body>
 </html>

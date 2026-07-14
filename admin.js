@@ -1,318 +1,42 @@
-const STORAGE_KEY = "ipdcec_registrations_v1";
-const ADMIN_SESSION_KEY = "ipdcec_admin_authed";
-const ADMIN_PASSWORD = "ipdcec-admin-2026";
 const isEnglish = document.documentElement.lang.toLowerCase().startsWith("en");
 
-const statusKeys = ["Baru", "Terverifikasi", "Lolos Administrasi", "Ditolak"];
-const statusLabels = {
-  Baru: isEnglish ? "New" : "Baru",
-  Terverifikasi: isEnglish ? "Verified" : "Terverifikasi",
-  "Lolos Administrasi": isEnglish ? "Admin Passed" : "Lolos Administrasi",
-  Ditolak: isEnglish ? "Rejected" : "Ditolak",
+const title = document.getElementById("admin-status-title");
+const desc = document.getElementById("admin-status-desc");
+const list = document.getElementById("admin-status-list");
+
+const content = {
+  en: {
+    title: "Admin Panel Disabled for Security",
+    desc:
+      "This public static page no longer handles admin login or participant data. A secured backend admin system is required.",
+    items: [
+      "Client-side passwords and localStorage are not secure for production.",
+      "Admin access should use server-side authentication and role checks.",
+      "Registration data must be stored in a protected database.",
+    ],
+  },
+  id: {
+    title: "Panel Admin Dinonaktifkan Demi Keamanan",
+    desc:
+      "Halaman statis publik ini tidak lagi menangani login admin atau data peserta. Dibutuhkan sistem admin backend yang aman.",
+    items: [
+      "Password di sisi klien dan localStorage tidak aman untuk produksi.",
+      "Akses admin harus memakai autentikasi sisi server dan pemeriksaan role.",
+      "Data pendaftaran wajib disimpan di database yang terlindungi.",
+    ],
+  },
 };
 
-const uiText = {
-  wrongPassword: isEnglish ? "Wrong password." : "Password salah.",
-  deleteConfirm: isEnglish ? "Delete this entry from admin panel?" : "Hapus data ini dari admin panel?",
-  unknownStatus: isEnglish ? "Unknown" : "Tidak diketahui",
-  exportFile: isEnglish ? "ipdcec-registrations-en.csv" : "ipdcec-registrations.csv",
-};
+const selected = isEnglish ? content.en : content.id;
 
-const loginSection = document.getElementById("admin-login");
-const dashboardSection = document.getElementById("admin-dashboard");
-const loginForm = document.getElementById("login-form");
-const loginStatus = document.getElementById("login-status");
-const tableBody = document.getElementById("admin-table-body");
-const emptyLabel = document.getElementById("admin-empty");
-const searchInput = document.getElementById("search-input");
-const filterStatus = document.getElementById("filter-status");
-
-function getEntries() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+if (title) {
+  title.textContent = selected.title;
 }
 
-function setEntries(entries) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+if (desc) {
+  desc.textContent = selected.desc;
 }
 
-function escapeHtml(value) {
-  return String(value || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-function formatDate(value) {
-  if (!value) {
-    return "-";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-  return date.toLocaleString(isEnglish ? "en-US" : "id-ID", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
-
-function labelStatus(status) {
-  return statusLabels[status] || uiText.unknownStatus;
-}
-
-function calculateStats(entries) {
-  const stats = {
-    total: entries.length,
-    baru: 0,
-    verifikasi: 0,
-    ditolak: 0,
-  };
-
-  entries.forEach((entry) => {
-    if (entry.status === "Baru") {
-      stats.baru += 1;
-    }
-    if (entry.status === "Terverifikasi" || entry.status === "Lolos Administrasi") {
-      stats.verifikasi += 1;
-    }
-    if (entry.status === "Ditolak") {
-      stats.ditolak += 1;
-    }
-  });
-
-  document.getElementById("stat-total").textContent = String(stats.total);
-  document.getElementById("stat-baru").textContent = String(stats.baru);
-  document.getElementById("stat-verifikasi").textContent = String(stats.verifikasi);
-  document.getElementById("stat-ditolak").textContent = String(stats.ditolak);
-}
-
-function getFilteredEntries() {
-  const searchTerm = (searchInput.value || "").trim().toLowerCase();
-  const selectedStatus = filterStatus.value;
-
-  return getEntries()
-    .sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))
-    .filter((entry) => {
-      const matchesStatus = selectedStatus === "all" || entry.status === selectedStatus;
-      if (!matchesStatus) {
-        return false;
-      }
-
-      if (!searchTerm) {
-        return true;
-      }
-
-      const joined = [
-        entry.leader_name,
-        entry.email,
-        entry.whatsapp,
-        entry.school_name,
-        entry.country,
-        entry.poster_title,
-        entry.subtheme,
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return joined.includes(searchTerm);
-    });
-}
-
-function renderTable() {
-  const entries = getFilteredEntries();
-  calculateStats(getEntries());
-
-  if (!entries.length) {
-    tableBody.innerHTML = "";
-    emptyLabel.hidden = false;
-    return;
-  }
-
-  emptyLabel.hidden = true;
-  tableBody.innerHTML = entries
-    .map((entry) => {
-      const teamInfo = entry.participant_type === "Team"
-        ? `${escapeHtml(entry.participant_type)}<br><small>${escapeHtml(entry.member_2 || "-")} | ${escapeHtml(entry.member_3 || "-")}</small>`
-        : escapeHtml(entry.participant_type || "Individual");
-
-      return `
-        <tr>
-          <td>${escapeHtml(formatDate(entry.submitted_at))}</td>
-          <td>
-            <strong>${escapeHtml(entry.leader_name)}</strong><br>
-            <small>${teamInfo}</small>
-          </td>
-          <td>
-            ${escapeHtml(entry.email)}<br>
-            <small>${escapeHtml(entry.whatsapp)}</small>
-          </td>
-          <td>
-            ${escapeHtml(entry.school_name)}<br>
-            <small>${escapeHtml(entry.country)}</small>
-          </td>
-          <td>
-            ${escapeHtml(entry.subtheme)}<br>
-            <small>${escapeHtml(entry.poster_title)}</small>
-          </td>
-          <td>
-            <select data-action="status" data-id="${escapeHtml(entry.id)}">
-              ${statusKeys
-                .map((status) => `<option value="${status}" ${entry.status === status ? "selected" : ""}>${labelStatus(status)}</option>`)
-                .join("")}
-            </select>
-          </td>
-          <td>
-            <button data-action="delete" data-id="${escapeHtml(entry.id)}" type="button">${isEnglish ? "Delete" : "Hapus"}</button>
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
-}
-
-function updateStatus(id, status) {
-  const entries = getEntries();
-  const updated = entries.map((entry) => {
-    if (entry.id === id) {
-      return { ...entry, status, updated_at: new Date().toISOString() };
-    }
-    return entry;
-  });
-  setEntries(updated);
-  renderTable();
-}
-
-function deleteEntry(id) {
-  const entries = getEntries();
-  const updated = entries.filter((entry) => entry.id !== id);
-  setEntries(updated);
-  renderTable();
-}
-
-function convertToCsv(rows) {
-  const headers = [
-    "id",
-    "submitted_at",
-    "status",
-    "participant_type",
-    "leader_name",
-    "member_2",
-    "member_3",
-    "email",
-    "whatsapp",
-    "school_name",
-    "country",
-    "poster_title",
-    "subtheme",
-    "files",
-  ];
-
-  const lines = [headers.join(",")];
-
-  rows.forEach((row) => {
-    const values = headers.map((key) => {
-      const value = key === "files" ? (row.files || []).join(" | ") : (row[key] || "");
-      const safe = String(value).replaceAll('"', '""');
-      return `"${safe}"`;
-    });
-    lines.push(values.join(","));
-  });
-
-  return lines.join("\n");
-}
-
-function exportCsv() {
-  const entries = getEntries().sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
-  const csv = convertToCsv(entries);
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = uiText.exportFile;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
-function showDashboard() {
-  loginSection.hidden = true;
-  dashboardSection.hidden = false;
-  renderTable();
-}
-
-function showLogin() {
-  loginSection.hidden = false;
-  dashboardSection.hidden = true;
-}
-
-loginForm?.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const password = document.getElementById("admin-password").value;
-
-  if (password !== ADMIN_PASSWORD) {
-    loginStatus.textContent = uiText.wrongPassword;
-    return;
-  }
-
-  sessionStorage.setItem(ADMIN_SESSION_KEY, "true");
-  loginStatus.textContent = "";
-  showDashboard();
-});
-
-searchInput?.addEventListener("input", renderTable);
-filterStatus?.addEventListener("change", renderTable);
-
-document.getElementById("export-csv")?.addEventListener("click", exportCsv);
-document.getElementById("logout-admin")?.addEventListener("click", () => {
-  sessionStorage.removeItem(ADMIN_SESSION_KEY);
-  showLogin();
-});
-
-tableBody?.addEventListener("change", (event) => {
-  const target = event.target;
-  if (!(target instanceof HTMLSelectElement)) {
-    return;
-  }
-
-  const action = target.dataset.action;
-  const id = target.dataset.id;
-
-  if (action === "status" && id) {
-    updateStatus(id, target.value);
-  }
-});
-
-tableBody?.addEventListener("click", (event) => {
-  const target = event.target;
-  if (!(target instanceof HTMLButtonElement)) {
-    return;
-  }
-
-  const action = target.dataset.action;
-  const id = target.dataset.id;
-
-  if (action === "delete" && id) {
-    const ok = window.confirm(uiText.deleteConfirm);
-    if (ok) {
-      deleteEntry(id);
-    }
-  }
-});
-
-if (sessionStorage.getItem(ADMIN_SESSION_KEY) === "true") {
-  showDashboard();
-} else {
-  showLogin();
+if (list) {
+  list.innerHTML = selected.items.map((item) => `<li>${item}</li>`).join("");
 }

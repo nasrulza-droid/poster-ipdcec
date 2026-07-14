@@ -10,6 +10,7 @@ Landing page promosi dan pendaftaran online untuk kompetisi **International Scie
 - Redirect ke halaman konfirmasi setelah submit berhasil.
 - Desain responsif untuk desktop dan mobile.
 - Dukungan dua bahasa (Indonesia dan English) untuk halaman peserta.
+- Hardening keamanan dasar untuk deployment statis (CSP, referrer policy, anti-bot form).
 
 ## Rute Bahasa
 
@@ -52,21 +53,24 @@ Form saat ini menggunakan FormSubmit:
 - Endpoint: `https://formsubmit.co/ipdcec2026@gmail.com`
 - Upload file didukung melalui `multipart/form-data`
 - Redirect sukses ke `success.html`
+- CAPTCHA FormSubmit diaktifkan dan honeypot anti-bot ditambahkan
 
 Catatan: pengiriman pertama memerlukan aktivasi email tujuan dari pesan verifikasi FormSubmit.
 
 ## Admin Panel
 
-Website menyediakan panel admin di halaman `admin.html`.
+Panel admin lama yang berbasis browser-only dinonaktifkan demi keamanan.
 
-- Login admin default: `ipdcec-admin-2026`
-- Fitur: lihat data, cari, filter status, ubah status, hapus data, export CSV
+Alasan:
 
-Penting:
+- Password client-side dan session browser tidak aman untuk produksi
+- Penyimpanan data di `localStorage` mudah dimanipulasi
 
-- Data admin pada versi ini disimpan di `localStorage` browser.
-- Artinya data yang tampil adalah data yang tersimpan pada browser/perangkat yang sama.
-- Untuk admin multi-user real-time lintas perangkat, perlu backend database (misalnya Firebase/Supabase).
+Rekomendasi produksi:
+
+- Gunakan backend dengan autentikasi server-side
+- Simpan data pendaftar di database terproteksi
+- Tambahkan rate limiting dan validasi upload file di server
 
 ## Deploy ke GitHub Pages
 

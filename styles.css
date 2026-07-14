@@ -445,6 +445,14 @@ h2 {
   font-size: 0.9rem;
 }
 
+.hp-field {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
 #form-status {
   font-weight: 700;
 }

@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src https://fonts.gstatic.com; connect-src 'self' https://formsubmit.co; form-action https://formsubmit.co; base-uri 'self'; frame-ancestors 'none'" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>IPDCEC 2026 - International Scientific Poster Competition</title>
     <meta
       name="description"
@@ -162,10 +165,11 @@
           enctype="multipart/form-data"
         >
           <input type="hidden" name="_subject" value="New Registration - IPDCEC 2026" />
-          <input type="hidden" name="_captcha" value="false" />
+          <input type="hidden" name="_captcha" value="true" />
           <input type="hidden" name="_template" value="table" />
           <input type="hidden" name="_next" value="success-en.html" />
           <input type="hidden" name="source_page" value="IPDCEC 2026 Landing Page (EN)" />
+          <input type="text" name="_honey" tabindex="-1" autocomplete="off" class="hp-field" />
 
           <div class="form-grid">
             <label>
@@ -308,7 +312,6 @@
     <footer class="footer">
       <p>Contact: ipdcec2026@gmail.com | Instagram/Tiktok/Youtube: @ipdcec2026</p>
       <p>CP: +62 812-6705-5711 | +62 831-6759-4356 | +62 813-6202-3850</p>
-      <p><a class="footer-link" href="admin.html">Admin Panel</a></p>
     </footer>
 
     <script src="script.js?v=20260714-2"></script>
