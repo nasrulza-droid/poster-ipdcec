@@ -69,38 +69,14 @@ const uiText = {
   fallback: isEnglish
     ? "Fast mode failed. Retrying with standard form submission..."
     : "Koneksi mode cepat gagal. Mencoba kirim ulang dengan mode formulir standar...",
+  backendFailed: isEnglish
+    ? "Submission to secured API failed. Please try again in a moment."
+    : "Pengiriman ke API aman gagal. Silakan coba beberapa saat lagi.",
 };
 
 function getApiBaseUrl() {
   const configured = document.documentElement.dataset.apiBaseUrl || "";
   return configured.trim().replace(/\/$/, "");
-}
-
-function buildApiPayload(formElement) {
-  const getInput = (name) => formElement.querySelector(`[name="${name}"]`);
-  const getValue = (name) => getInput(name)?.value?.trim() || "";
-  const getFileName = (name) => getInput(name)?.files?.[0]?.name || "";
-
-  return {
-    participant_type: document.querySelector('input[name="participant_type"]:checked')?.value || "Individual",
-    leader_name: getValue("leader_name"),
-    member_2: getValue("member_2"),
-    member_3: getValue("member_3"),
-    email: getValue("email"),
-    whatsapp: getValue("whatsapp"),
-    school_name: getValue("school_name"),
-    country: getValue("country"),
-    poster_title: getValue("poster_title"),
-    subtheme: getValue("subtheme"),
-    files: [
-      getFileName("student_id_or_enrollment"),
-      getFileName("proof_follow_instagram"),
-      getFileName("proof_twibbon"),
-      getFileName("proof_share_poster"),
-      getFileName("poster_final_file"),
-      getFileName("proof_payment"),
-    ].filter(Boolean),
-  };
 }
 
 async function submitToBackendApi(formElement) {
@@ -109,12 +85,11 @@ async function submitToBackendApi(formElement) {
     return false;
   }
 
+  const formData = new FormData(formElement);
+
   const response = await fetch(`${baseUrl}/api/registrations`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(buildApiPayload(formElement)),
+    body: formData,
   });
 
   if (!response.ok) {
@@ -159,19 +134,22 @@ if (registrationForm) {
     }
 
     try {
-      await submitToBackendApi(registrationForm);
+      const hasBackend = Boolean(getApiBaseUrl());
+      if (hasBackend) {
+        await submitToBackendApi(registrationForm);
+      } else {
+        const formData = new FormData(registrationForm);
+        const response = await fetch(registrationForm.action, {
+          method: "POST",
+          body: formData,
+          headers: {
+            Accept: "application/json",
+          },
+        });
 
-      const formData = new FormData(registrationForm);
-      const response = await fetch(registrationForm.action, {
-        method: "POST",
-        body: formData,
-        headers: {
-          Accept: "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Pengiriman gagal.");
+        if (!response.ok) {
+          throw new Error("Submission failed.");
+        }
       }
 
       if (formStatus) {
@@ -185,13 +163,16 @@ if (registrationForm) {
       }, 800);
     } catch (error) {
       if (formStatus) {
-        formStatus.textContent = uiText.fallback;
+        const hasBackend = Boolean(getApiBaseUrl());
+        formStatus.textContent = hasBackend ? uiText.backendFailed : uiText.fallback;
       }
 
-      // Fallback: use native form submission for environments where fetch/CORS is blocked.
-      setTimeout(() => {
-        registrationForm.submit();
-      }, 500);
+      if (!getApiBaseUrl()) {
+        // Fallback: use native form submission for environments where fetch/CORS is blocked.
+        setTimeout(() => {
+          registrationForm.submit();
+        }, 500);
+      }
     } finally {
       if (submitButton) {
         submitButton.disabled = false;

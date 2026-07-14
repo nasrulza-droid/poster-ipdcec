@@ -84,6 +84,7 @@ Repository ini sekarang memiliki fondasi backend aman di folder `backend/` denga
 - Password admin di-hash (bcrypt)
 - Rate limiting login dan endpoint API
 - Penyimpanan data pendaftaran di SQLite
+- Upload dokumen via backend multipart dengan validasi MIME dan size
 
 ### Menjalankan Backend
 
@@ -118,8 +119,13 @@ Contoh:
 
 Catatan:
 
-- Frontend saat ini mengirim ke backend API (jika URL diisi), lalu tetap mengirim ke FormSubmit sebagai fallback operasional.
+- Jika `data-api-base-url` diisi, frontend mengirim pendaftaran langsung ke backend API (termasuk file upload).
+- Jika `data-api-base-url` kosong, frontend memakai FormSubmit sebagai fallback operasional.
 - Jika sudah penuh pindah ke backend + file storage sendiri, endpoint FormSubmit bisa dihapus dari form.
+
+Lokasi file upload backend:
+
+- `backend/uploads/`
 
 ## Admin Dashboard Aman (Frontend)
 
