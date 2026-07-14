@@ -85,6 +85,7 @@ Repository ini sekarang memiliki fondasi backend aman di folder `backend/` denga
 - Rate limiting login dan endpoint API
 - Penyimpanan data pendaftaran di SQLite
 - Upload dokumen via backend multipart dengan validasi MIME dan size
+- Rate limit khusus endpoint pendaftaran (anti abuse)
 
 ### Menjalankan Backend
 
@@ -95,6 +96,11 @@ npm install
 npm run init-admin
 npm run dev
 ```
+
+Konfigurasi CORS multi-origin:
+
+- Gunakan `ALLOWED_ORIGINS` (dipisah koma) di `.env`
+- Di production, pastikan daftar origin terisi agar hanya domain resmi yang bisa akses API
 
 Health check:
 
@@ -137,6 +143,7 @@ Halaman admin sekarang memakai backend API dengan alur:
 - Ubah status/hapus data via endpoint admin terautentikasi
 - Export CSV dari `/api/registrations/admin/export.csv`
 - Lihat audit log admin dari `/api/registrations/admin/logs`
+- Unduh file peserta terproteksi dari `/api/registrations/admin/:id/files/:field`
 
 Sebelum dipakai, pastikan:
 

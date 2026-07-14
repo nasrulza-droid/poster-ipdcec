@@ -8,7 +8,33 @@ import { buildAuthRouter } from "./routes/auth.js";
 import { buildRegistrationsRouter } from "./routes/registrations.js";
 
 const port = Number(process.env.PORT || 5001);
-const allowedOrigin = process.env.ALLOWED_ORIGIN || "*";
+const isProduction = process.env.NODE_ENV === "production";
+
+function resolveAllowedOrigins() {
+  const raw = process.env.ALLOWED_ORIGINS || process.env.ALLOWED_ORIGIN || "";
+  const configured = raw
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (configured.length) {
+    return configured;
+  }
+
+  if (isProduction) {
+    return [];
+  }
+
+  return [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:5001",
+  ];
+}
+
+const allowedOrigins = resolveAllowedOrigins();
 
 async function start() {
   if (!process.env.JWT_SECRET) {
@@ -21,7 +47,19 @@ async function start() {
   app.use(helmet());
   app.use(
     cors({
-      origin: allowedOrigin,
+      origin(origin, callback) {
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error("Origin not allowed by CORS."));
+      },
       methods: ["GET", "POST", "PATCH", "DELETE"],
       allowedHeaders: ["Content-Type", "Authorization"],
     })

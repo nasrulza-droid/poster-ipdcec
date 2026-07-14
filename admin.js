@@ -12,6 +12,8 @@ const uiText = {
   unknownStatus: isEnglish ? "Unknown" : "Tidak diketahui",
   loginRequired: isEnglish ? "Login session expired. Please sign in again." : "Sesi login habis. Silakan masuk lagi.",
   csvFile: isEnglish ? "ipdcec-registrations-en.csv" : "ipdcec-registrations.csv",
+  download: isEnglish ? "Download" : "Unduh",
+  noFiles: isEnglish ? "No files" : "Tidak ada file",
   loadingLogs: isEnglish ? "Loading activity logs..." : "Memuat log aktivitas...",
   loadLogsFailed: isEnglish ? "Failed to load activity logs." : "Gagal memuat log aktivitas.",
 };
@@ -78,6 +80,14 @@ function labelStatus(status) {
   return statusLabels[status] || uiText.unknownStatus;
 }
 
+function getEntryFiles(entry) {
+  if (!Array.isArray(entry.files)) {
+    return [];
+  }
+
+  return entry.files.filter((item) => item && typeof item === "object" && item.field && item.original_name);
+}
+
 async function apiRequest(path, options = {}) {
   const baseUrl = getApiBaseUrl();
   if (!baseUrl) {
@@ -103,6 +113,23 @@ async function apiRequest(path, options = {}) {
   }
 
   return response;
+}
+
+async function downloadRegistrationFile(entryId, field, fileName) {
+  const response = await apiRequest(`/api/registrations/admin/${encodeURIComponent(entryId)}/files/${encodeURIComponent(field)}`);
+  if (!response.ok) {
+    throw new Error(uiText.loadFailed);
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName || `${field}.bin`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function calculateStats(entries) {
@@ -177,9 +204,20 @@ function renderTable() {
   emptyLabel.hidden = true;
   tableBody.innerHTML = entries
     .map((entry) => {
+      const files = getEntryFiles(entry);
       const teamInfo = entry.participant_type === "Team"
         ? `${escapeHtml(entry.participant_type)}<br><small>${escapeHtml(entry.member_2 || "-")} | ${escapeHtml(entry.member_3 || "-")}</small>`
         : escapeHtml(entry.participant_type || "Individual");
+
+      const filesCell = files.length
+        ? files
+            .map((file) => {
+              const field = escapeHtml(file.field);
+              const name = escapeHtml(file.original_name);
+              return `<button data-action="download-file" data-id="${escapeHtml(entry.id)}" data-field="${field}" data-name="${name}" type="button">${uiText.download}: ${name}</button>`;
+            })
+            .join("<br>")
+        : `<small>${uiText.noFiles}</small>`;
 
       return `
         <tr>
@@ -200,6 +238,7 @@ function renderTable() {
             ${escapeHtml(entry.subtheme)}<br>
             <small>${escapeHtml(entry.poster_title)}</small>
           </td>
+          <td>${filesCell}</td>
           <td>
             <select data-action="status" data-id="${escapeHtml(entry.id)}">
               ${statusKeys
@@ -426,6 +465,20 @@ tableBody?.addEventListener("click", async (event) => {
 
   const action = target.dataset.action;
   const id = target.dataset.id;
+
+  if (action === "download-file" && id) {
+    const field = target.dataset.field || "";
+    const name = target.dataset.name || "download.bin";
+    try {
+      await downloadRegistrationFile(id, field, name);
+    } catch (error) {
+      if (emptyLabel) {
+        emptyLabel.hidden = false;
+        emptyLabel.textContent = error.message || uiText.loadFailed;
+      }
+    }
+    return;
+  }
 
   if (action === "delete" && id) {
     const ok = window.confirm(uiText.deleteConfirm);

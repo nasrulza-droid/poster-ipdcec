@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import multer from "multer";
+import rateLimit from "express-rate-limit";
 import { requireAuth } from "../middleware/auth.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,10 +55,27 @@ const upload = multer({
   },
 });
 
+const registrationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many registration attempts. Try again later." },
+});
+
+function parseJsonArray(value) {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function mapRegistration(row) {
   return {
     ...row,
-    files: JSON.parse(row.files_json || "[]"),
+    files: parseJsonArray(row.files_json),
   };
 }
 
@@ -113,7 +131,7 @@ export function buildRegistrationsRouter(db) {
 
   const uploadFields = upload.fields(fieldNames.map((name) => ({ name, maxCount: 1 })));
 
-  router.post("/", (req, res, next) => {
+  router.post("/", registrationLimiter, (req, res, next) => {
     uploadFields(req, res, (error) => {
       if (error) {
         return res.status(400).json({ message: error.message || "Invalid upload." });
@@ -222,6 +240,42 @@ export function buildRegistrationsRouter(db) {
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", "attachment; filename=ipdcec-registrations.csv");
     return res.status(200).send(csv);
+  });
+
+  router.get("/admin/:id/files/:field", requireAuth, async (req, res) => {
+    const { id, field } = req.params;
+    if (!fieldNames.includes(field)) {
+      return res.status(400).json({ message: "Invalid file field." });
+    }
+
+    const row = await db.get("SELECT id, files_json FROM registrations WHERE id = ?", id);
+    if (!row) {
+      return res.status(404).json({ message: "Registration not found." });
+    }
+
+    const files = parseJsonArray(row.files_json);
+    const fileMeta = files.find((item) => item && typeof item === "object" && item.field === field);
+    if (!fileMeta?.stored_name) {
+      return res.status(404).json({ message: "File not found." });
+    }
+
+    const absolutePath = path.resolve(uploadDir, fileMeta.stored_name);
+    const normalizedUploadDir = path.resolve(uploadDir);
+    if (!absolutePath.startsWith(normalizedUploadDir)) {
+      return res.status(400).json({ message: "Invalid file path." });
+    }
+
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ message: "Stored file not found." });
+    }
+
+    const downloadName = String(fileMeta.original_name || `${field}.bin`).replace(/[\r\n"]/g, "_");
+
+    await logAdminAction(db, req.user?.email, "registration.file.download", id, { field, stored_name: fileMeta.stored_name });
+
+    res.setHeader("Content-Type", fileMeta.mime_type || "application/octet-stream");
+    res.setHeader("Content-Disposition", `attachment; filename="${downloadName}"`);
+    return res.sendFile(absolutePath);
   });
 
   router.patch("/admin/:id/status", requireAuth, async (req, res) => {
