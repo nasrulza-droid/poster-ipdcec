@@ -57,6 +57,56 @@ const formStatus = document.getElementById("form-status");
 const teamFields = document.getElementById("team-fields");
 const memberTwoInput = registrationForm?.querySelector('input[name="member_2"]');
 const participantTypeOptions = registrationForm?.querySelectorAll('input[name="participant_type"]');
+const STORAGE_KEY = "ipdcec_registrations_v1";
+
+function getStoredEntries() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function storeEntry(entry) {
+  const current = getStoredEntries();
+  current.push(entry);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+}
+
+function buildRegistrationEntry(formElement) {
+  const getInput = (name) => formElement.querySelector(`[name="${name}"]`);
+  const getValue = (name) => getInput(name)?.value?.trim() || "";
+  const getFileName = (name) => getInput(name)?.files?.[0]?.name || "";
+
+  return {
+    id: `REG-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    submitted_at: new Date().toISOString(),
+    status: "Baru",
+    participant_type: document.querySelector('input[name="participant_type"]:checked')?.value || "Individual",
+    leader_name: getValue("leader_name"),
+    member_2: getValue("member_2"),
+    member_3: getValue("member_3"),
+    email: getValue("email"),
+    whatsapp: getValue("whatsapp"),
+    school_name: getValue("school_name"),
+    country: getValue("country"),
+    poster_title: getValue("poster_title"),
+    subtheme: getValue("subtheme"),
+    files: [
+      getFileName("student_id_or_enrollment"),
+      getFileName("proof_follow_instagram"),
+      getFileName("proof_twibbon"),
+      getFileName("proof_share_poster"),
+      getFileName("poster_final_file"),
+      getFileName("proof_payment"),
+    ].filter(Boolean),
+  };
+}
 
 function syncParticipantType() {
   if (!participantTypeOptions || !teamFields) {
@@ -93,6 +143,8 @@ if (registrationForm) {
     }
 
     try {
+      storeEntry(buildRegistrationEntry(registrationForm));
+
       const formData = new FormData(registrationForm);
       const response = await fetch(registrationForm.action, {
         method: "POST",

@@ -49,6 +49,19 @@ Form saat ini menggunakan FormSubmit:
 
 Catatan: pengiriman pertama memerlukan aktivasi email tujuan dari pesan verifikasi FormSubmit.
 
+## Admin Panel
+
+Website menyediakan panel admin di halaman `admin.html`.
+
+- Login admin default: `ipdcec-admin-2026`
+- Fitur: lihat data, cari, filter status, ubah status, hapus data, export CSV
+
+Penting:
+
+- Data admin pada versi ini disimpan di `localStorage` browser.
+- Artinya data yang tampil adalah data yang tersimpan pada browser/perangkat yang sama.
+- Untuk admin multi-user real-time lintas perangkat, perlu backend database (misalnya Firebase/Supabase).
+
 ## Deploy ke GitHub Pages
 
 Lihat langkah detail di panduan yang akan diberikan setelah setup repo selesai.

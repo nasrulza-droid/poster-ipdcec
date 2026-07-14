@@ -488,6 +488,148 @@ h2 {
   font-size: 0.92rem;
 }
 
+.footer-link {
+  color: var(--brand);
+  font-weight: 800;
+}
+
+.admin-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 12px 18px 80px;
+}
+
+.admin-box {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.admin-note {
+  margin: 0 0 10px;
+  color: var(--ink-soft);
+}
+
+.admin-login-form {
+  display: grid;
+  gap: 12px;
+  max-width: 420px;
+}
+
+.admin-login-form label,
+.admin-tools label {
+  display: grid;
+  gap: 7px;
+  font-weight: 700;
+}
+
+.admin-login-form input,
+.admin-tools input,
+.admin-tools select,
+.admin-table select,
+.admin-table button {
+  font: inherit;
+}
+
+.admin-login-form input,
+.admin-tools input,
+.admin-tools select,
+.admin-table select {
+  width: 100%;
+  border: 1px solid rgba(17, 73, 163, 0.28);
+  border-radius: 10px;
+  padding: 10px 11px;
+  background: #fff;
+}
+
+.admin-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.admin-stats {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-stats article {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px;
+}
+
+.admin-stats h3 {
+  font-size: 0.95rem;
+}
+
+.admin-stats p {
+  margin: 6px 0 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--brand);
+}
+
+.admin-tools {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 260px;
+}
+
+.admin-table-wrap {
+  margin-top: 14px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 960px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(17, 73, 163, 0.14);
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-table th {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--ink-soft);
+}
+
+.admin-table td small {
+  color: var(--ink-soft);
+}
+
+.admin-table button {
+  border: 1px solid rgba(190, 32, 55, 0.32);
+  color: #be2037;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.admin-table button:hover {
+  background: rgba(190, 32, 55, 0.08);
+}
+
 .reveal {
   opacity: 0;
   transform: translateY(26px);
@@ -510,7 +652,9 @@ h2 {
 
   .quick-facts,
   .req-grid,
-  .form-grid {
+  .form-grid,
+  .admin-stats,
+  .admin-tools {
     grid-template-columns: 1fr;
   }
 
