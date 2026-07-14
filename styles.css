@@ -41,6 +41,38 @@ body {
   align-items: center;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.lang-switch-inline {
+  margin-bottom: 10px;
+}
+
+.lang-pill {
+  padding: 6px 12px;
+  font-weight: 800;
+  text-decoration: none;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.lang-pill.active {
+  background: var(--brand);
+  color: #fff;
+}
+
 .brand {
   font-family: "Archivo Black", sans-serif;
   letter-spacing: 0.8px;
@@ -667,6 +699,10 @@ h2 {
   .topbar {
     flex-direction: column;
     gap: 6px;
+  }
+
+  .topbar-actions {
+    flex-direction: column;
   }
 
   .count-grid {

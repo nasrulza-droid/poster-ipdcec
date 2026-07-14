@@ -9,6 +9,12 @@ Landing page promosi dan pendaftaran online untuk kompetisi **International Scie
 - Form pendaftaran online dengan upload dokumen wajib.
 - Redirect ke halaman konfirmasi setelah submit berhasil.
 - Desain responsif untuk desktop dan mobile.
+- Dukungan dua bahasa (Indonesia dan English) untuk halaman peserta.
+
+## Rute Bahasa
+
+- Indonesia: `index.html` dan `success.html`
+- English: `index-en.html` dan `success-en.html`
 
 ## Struktur Proyek
 

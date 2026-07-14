@@ -58,6 +58,19 @@ const teamFields = document.getElementById("team-fields");
 const memberTwoInput = registrationForm?.querySelector('input[name="member_2"]');
 const participantTypeOptions = registrationForm?.querySelectorAll('input[name="participant_type"]');
 const STORAGE_KEY = "ipdcec_registrations_v1";
+const isEnglish = document.documentElement.lang.toLowerCase().startsWith("en");
+
+const uiText = {
+  sending: isEnglish ? "Submitting registration..." : "Mengirim pendaftaran...",
+  sendingButton: isEnglish ? "Submitting..." : "Mengirim...",
+  sendButton: isEnglish ? "Submit Registration" : "Kirim Pendaftaran",
+  success: isEnglish
+    ? "Registration submitted successfully. Please check committee email verification updates."
+    : "Pendaftaran berhasil dikirim. Silakan cek email panitia untuk verifikasi masuk.",
+  fallback: isEnglish
+    ? "Fast mode failed. Retrying with standard form submission..."
+    : "Koneksi mode cepat gagal. Mencoba kirim ulang dengan mode formulir standar...",
+};
 
 function getStoredEntries() {
   try {
@@ -133,13 +146,13 @@ if (registrationForm) {
     event.preventDefault();
 
     if (formStatus) {
-      formStatus.textContent = "Mengirim pendaftaran...";
+      formStatus.textContent = uiText.sending;
     }
 
     const submitButton = registrationForm.querySelector('button[type="submit"]');
     if (submitButton) {
       submitButton.disabled = true;
-      submitButton.textContent = "Mengirim...";
+      submitButton.textContent = uiText.sendingButton;
     }
 
     try {
@@ -159,7 +172,7 @@ if (registrationForm) {
       }
 
       if (formStatus) {
-        formStatus.textContent = "Pendaftaran berhasil dikirim. Silakan cek email panitia untuk verifikasi masuk.";
+        formStatus.textContent = uiText.success;
       }
 
       registrationForm.reset();
@@ -169,7 +182,7 @@ if (registrationForm) {
       }, 800);
     } catch (error) {
       if (formStatus) {
-        formStatus.textContent = "Koneksi mode cepat gagal. Mencoba kirim ulang dengan mode formulir standar...";
+        formStatus.textContent = uiText.fallback;
       }
 
       // Fallback: use native form submission for environments where fetch/CORS is blocked.
@@ -179,7 +192,7 @@ if (registrationForm) {
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
-        submitButton.textContent = "Kirim Pendaftaran";
+        submitButton.textContent = uiText.sendButton;
       }
     }
   });
