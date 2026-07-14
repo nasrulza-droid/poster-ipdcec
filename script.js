@@ -117,8 +117,13 @@ if (registrationForm) {
       }, 800);
     } catch (error) {
       if (formStatus) {
-        formStatus.textContent = "Pengiriman gagal dari browser ini. Coba ulangi, atau gunakan tombol Buka Form Resmi.";
+        formStatus.textContent = "Koneksi mode cepat gagal. Mencoba kirim ulang dengan mode formulir standar...";
       }
+
+      // Fallback: use native form submission for environments where fetch/CORS is blocked.
+      setTimeout(() => {
+        registrationForm.submit();
+      }, 500);
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
