@@ -107,6 +107,8 @@ Set atribut `data-api-base-url` di tag `<html>`:
 
 - `index.html`
 - `index-en.html`
+- `admin.html`
+- `admin-en.html`
 
 Contoh:
 
@@ -118,3 +120,18 @@ Catatan:
 
 - Frontend saat ini mengirim ke backend API (jika URL diisi), lalu tetap mengirim ke FormSubmit sebagai fallback operasional.
 - Jika sudah penuh pindah ke backend + file storage sendiri, endpoint FormSubmit bisa dihapus dari form.
+
+## Admin Dashboard Aman (Frontend)
+
+Halaman admin sekarang memakai backend API dengan alur:
+
+- Login email + password ke `/api/auth/login`
+- Simpan token sesi admin di `sessionStorage`
+- Ambil data pendaftar dari `/api/registrations/admin`
+- Ubah status/hapus data via endpoint admin terautentikasi
+- Export CSV dari `/api/registrations/admin/export.csv`
+
+Sebelum dipakai, pastikan:
+
+- backend sudah jalan
+- `data-api-base-url` mengarah ke host API backend yang benar

@@ -9,6 +9,46 @@ function mapRegistration(row) {
   };
 }
 
+function toCsv(rows) {
+  const headers = [
+    "id",
+    "submitted_at",
+    "updated_at",
+    "status",
+    "participant_type",
+    "leader_name",
+    "member_2",
+    "member_3",
+    "email",
+    "whatsapp",
+    "school_name",
+    "country",
+    "poster_title",
+    "subtheme",
+    "files",
+  ];
+
+  const escapeCell = (value) => {
+    const safe = String(value ?? "").replaceAll('"', '""');
+    return `"${safe}"`;
+  };
+
+  const lines = [headers.join(",")];
+
+  rows.forEach((row) => {
+    const entry = mapRegistration(row);
+    const cells = headers.map((key) => {
+      if (key === "files") {
+        return escapeCell((entry.files || []).join(" | "));
+      }
+      return escapeCell(entry[key]);
+    });
+    lines.push(cells.join(","));
+  });
+
+  return lines.join("\n");
+}
+
 export function buildRegistrationsRouter(db) {
   const router = express.Router();
 
@@ -65,6 +105,14 @@ export function buildRegistrationsRouter(db) {
   router.get("/admin", requireAuth, async (_req, res) => {
     const rows = await db.all("SELECT * FROM registrations ORDER BY submitted_at DESC");
     return res.json(rows.map(mapRegistration));
+  });
+
+  router.get("/admin/export.csv", requireAuth, async (_req, res) => {
+    const rows = await db.all("SELECT * FROM registrations ORDER BY submitted_at DESC");
+    const csv = toCsv(rows);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", "attachment; filename=ipdcec-registrations.csv");
+    return res.status(200).send(csv);
   });
 
   router.patch("/admin/:id/status", requireAuth, async (req, res) => {
