@@ -11,27 +11,33 @@ const port = Number(process.env.PORT || 5001);
 const isProduction = process.env.NODE_ENV === "production";
 
 function resolveAllowedOrigins() {
-  const raw = process.env.ALLOWED_ORIGINS || process.env.ALLOWED_ORIGIN || "";
-  const configured = raw
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  if (configured.length) {
-    return configured;
-  }
-
-  if (isProduction) {
-    return [];
-  }
-
-  return [
+  const localDevOrigins = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
     "http://localhost:5500",
     "http://127.0.0.1:5500",
     "http://localhost:5001",
   ];
+
+  const raw = process.env.ALLOWED_ORIGINS || process.env.ALLOWED_ORIGIN || "";
+  const configured = raw
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (configured.length && isProduction) {
+    return configured;
+  }
+
+  if (configured.length && !isProduction) {
+    return [...new Set([...configured, ...localDevOrigins])];
+  }
+
+  if (isProduction) {
+    return [];
+  }
+
+  return localDevOrigins;
 }
 
 const allowedOrigins = resolveAllowedOrigins();

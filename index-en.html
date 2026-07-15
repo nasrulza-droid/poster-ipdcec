@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-api-base-url="">
+<html lang="en" data-api-base-url="http://localhost:5001">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -173,6 +173,47 @@
           Instagram publication requirements: include official competition hashtags, tag @ipdcec2026, and keep your account public until winners are announced.
         </p>
 
+        <div id="participant-auth" class="participant-auth">
+          <h3>Participant Account</h3>
+          <p class="small-note">Create your account first, then login. The competition form will open after login.</p>
+          <div class="participant-auth-grid">
+            <form id="participant-register-form" class="participant-auth-form" autocomplete="off">
+              <h4>Register</h4>
+              <label>
+                Full Name
+                <input type="text" name="full_name" required />
+              </label>
+              <label>
+                Email
+                <input type="email" name="email" required />
+              </label>
+              <label>
+                Password (minimum 8 characters)
+                <input type="password" name="password" minlength="8" required />
+              </label>
+              <button type="submit" class="btn btn-secondary">Create Account</button>
+            </form>
+
+            <form id="participant-login-form" class="participant-auth-form" autocomplete="off">
+              <h4>Login</h4>
+              <label>
+                Email
+                <input type="email" name="email" required />
+              </label>
+              <label>
+                Password
+                <input type="password" name="password" required />
+              </label>
+              <button type="submit" class="btn btn-primary">Sign In</button>
+            </form>
+          </div>
+          <div id="participant-session" class="participant-session" hidden>
+            <p id="participant-session-text"></p>
+            <button type="button" id="participant-logout" class="btn btn-secondary">Logout</button>
+          </div>
+          <p id="participant-auth-status" class="small-note" aria-live="polite"></p>
+        </div>
+
         <form
           id="registration-form"
           class="registration-form"
@@ -186,6 +227,8 @@
           <input type="hidden" name="_next" value="success-en.html" />
           <input type="hidden" name="source_page" value="IPDCEC 2026 Landing Page (EN)" />
           <input type="text" name="_honey" tabindex="-1" autocomplete="off" class="hp-field" />
+
+          <fieldset id="registration-fields-lock" class="registration-fields-lock">
 
           <div class="form-grid">
             <label>
@@ -309,6 +352,7 @@
           <noscript>
             <p class="small-note">JavaScript is disabled. After submission, you will be redirected by the form service to a confirmation page.</p>
           </noscript>
+          </fieldset>
           <p id="form-status" class="small-note" aria-live="polite"></p>
         </form>
       </section>
@@ -331,6 +375,6 @@
       <p>LinkedIn: International Plant Design Chemical Engineering Competition (IPDCEC)</p>
     </footer>
 
-    <script src="script.js?v=20260714-2"></script>
+    <script src="script.js?v=20260715-1"></script>
   </body>
 </html>

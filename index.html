@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="id" data-api-base-url="">
+<html lang="id" data-api-base-url="http://localhost:5001">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -173,6 +173,47 @@
           Ketentuan publikasi Instagram: cantumkan hashtag resmi kompetisi, tag akun @ipdcec2026, dan pastikan akun tetap publik hingga pengumuman pemenang.
         </p>
 
+        <div id="participant-auth" class="participant-auth">
+          <h3>Akun Pendaftar</h3>
+          <p class="small-note">Daftar akun dulu, lalu login. Setelah login, form data lomba akan terbuka.</p>
+          <div class="participant-auth-grid">
+            <form id="participant-register-form" class="participant-auth-form" autocomplete="off">
+              <h4>Register</h4>
+              <label>
+                Nama Lengkap
+                <input type="text" name="full_name" required />
+              </label>
+              <label>
+                Email
+                <input type="email" name="email" required />
+              </label>
+              <label>
+                Password (minimal 8 karakter)
+                <input type="password" name="password" minlength="8" required />
+              </label>
+              <button type="submit" class="btn btn-secondary">Daftar Akun</button>
+            </form>
+
+            <form id="participant-login-form" class="participant-auth-form" autocomplete="off">
+              <h4>Login</h4>
+              <label>
+                Email
+                <input type="email" name="email" required />
+              </label>
+              <label>
+                Password
+                <input type="password" name="password" required />
+              </label>
+              <button type="submit" class="btn btn-primary">Masuk</button>
+            </form>
+          </div>
+          <div id="participant-session" class="participant-session" hidden>
+            <p id="participant-session-text"></p>
+            <button type="button" id="participant-logout" class="btn btn-secondary">Keluar</button>
+          </div>
+          <p id="participant-auth-status" class="small-note" aria-live="polite"></p>
+        </div>
+
         <form
           id="registration-form"
           class="registration-form"
@@ -186,6 +227,8 @@
           <input type="hidden" name="_next" value="success.html" />
           <input type="hidden" name="source_page" value="Landing Page IPDCEC 2026" />
           <input type="text" name="_honey" tabindex="-1" autocomplete="off" class="hp-field" />
+
+          <fieldset id="registration-fields-lock" class="registration-fields-lock">
 
           <div class="form-grid">
             <label>
@@ -309,6 +352,7 @@
           <noscript>
             <p class="small-note">JavaScript nonaktif. Setelah submit, kamu akan diarahkan oleh layanan form ke halaman konfirmasi.</p>
           </noscript>
+          </fieldset>
           <p id="form-status" class="small-note" aria-live="polite"></p>
         </form>
       </section>
@@ -331,6 +375,6 @@
       <p>LinkedIn: International Plant Design Chemical Engineering Competition (IPDCEC)</p>
     </footer>
 
-    <script src="script.js?v=20260714-2"></script>
+    <script src="script.js?v=20260715-1"></script>
   </body>
 </html>

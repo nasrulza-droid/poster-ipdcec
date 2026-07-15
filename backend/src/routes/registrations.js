@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import multer from "multer";
 import rateLimit from "express-rate-limit";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireParticipantAuth } from "../middleware/auth.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -109,7 +109,18 @@ function toCsv(rows) {
     const entry = mapRegistration(row);
     const cells = headers.map((key) => {
       if (key === "files") {
-        return escapeCell((entry.files || []).join(" | "));
+        const filesText = (entry.files || [])
+          .map((file) => {
+            if (!file || typeof file !== "object") {
+              return "";
+            }
+            const field = String(file.field || "file");
+            const name = String(file.original_name || file.stored_name || "unknown");
+            return `${field}:${name}`;
+          })
+          .filter(Boolean)
+          .join(" | ");
+        return escapeCell(filesText);
       }
       return escapeCell(entry[key]);
     });
@@ -131,7 +142,7 @@ export function buildRegistrationsRouter(db) {
 
   const uploadFields = upload.fields(fieldNames.map((name) => ({ name, maxCount: 1 })));
 
-  router.post("/", registrationLimiter, (req, res, next) => {
+  router.post("/", requireParticipantAuth, registrationLimiter, (req, res, next) => {
     uploadFields(req, res, (error) => {
       if (error) {
         return res.status(400).json({ message: error.message || "Invalid upload." });
