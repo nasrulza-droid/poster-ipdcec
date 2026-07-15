@@ -67,6 +67,7 @@ const participantLogoutBtn = document.getElementById("participant-logout");
 const registrationFieldsLock = document.getElementById("registration-fields-lock");
 const isEnglish = document.documentElement.lang.toLowerCase().startsWith("en");
 const participantTokenKey = "ipdcecParticipantToken";
+const participantAccountsKey = "ipdcecParticipantLocalAccounts";
 
 const uiText = {
   registerSending: isEnglish ? "Creating account..." : "Membuat akun...",
@@ -81,6 +82,12 @@ const uiText = {
   authUnavailable: isEnglish
     ? "Participant authentication requires backend API. Set data-api-base-url first."
     : "Autentikasi peserta butuh backend API. Isi data-api-base-url terlebih dulu.",
+  localAuthMode: isEnglish
+    ? "Using local participant auth mode for this website."
+    : "Menggunakan mode autentikasi lokal peserta untuk website ini.",
+  emailExists: isEnglish ? "Email is already registered." : "Email sudah terdaftar.",
+  invalidCredentials: isEnglish ? "Invalid email or password." : "Email atau password tidak valid.",
+  weakPassword: isEnglish ? "Password must be at least 8 characters." : "Password minimal 8 karakter.",
   sending: isEnglish ? "Submitting registration..." : "Mengirim pendaftaran...",
   sendingButton: isEnglish ? "Submitting..." : "Mengirim...",
   sendButton: isEnglish ? "Submit Registration" : "Kirim Pendaftaran",
@@ -101,6 +108,75 @@ const uiText = {
 function getApiBaseUrl() {
   const configured = document.documentElement.dataset.apiBaseUrl || "";
   return configured.trim().replace(/\/$/, "");
+}
+
+function getNormalizedEmail(rawEmail) {
+  return String(rawEmail || "").trim().toLowerCase();
+}
+
+function readLocalParticipantAccounts() {
+  try {
+    const raw = localStorage.getItem(participantAccountsKey) || "{}";
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+    return parsed;
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalParticipantAccounts(accounts) {
+  localStorage.setItem(participantAccountsKey, JSON.stringify(accounts));
+}
+
+function registerLocalParticipant(fullName, email, password) {
+  const normalizedEmail = getNormalizedEmail(email);
+  const trimmedName = String(fullName || "").trim();
+
+  if (String(password || "").length < 8) {
+    return { ok: false, message: uiText.weakPassword };
+  }
+
+  const accounts = readLocalParticipantAccounts();
+  if (accounts[normalizedEmail]) {
+    return { ok: false, message: uiText.emailExists };
+  }
+
+  accounts[normalizedEmail] = {
+    full_name: trimmedName,
+    password,
+  };
+  writeLocalParticipantAccounts(accounts);
+
+  return {
+    ok: true,
+    user: {
+      email: normalizedEmail,
+      full_name: trimmedName,
+    },
+  };
+}
+
+function loginLocalParticipant(email, password) {
+  const normalizedEmail = getNormalizedEmail(email);
+  const accounts = readLocalParticipantAccounts();
+  const account = accounts[normalizedEmail];
+
+  if (!account || String(account.password || "") !== String(password || "")) {
+    return { ok: false, message: uiText.invalidCredentials };
+  }
+
+  const localToken = `local:${normalizedEmail}`;
+  return {
+    ok: true,
+    token: localToken,
+    user: {
+      email: normalizedEmail,
+      full_name: String(account.full_name || normalizedEmail),
+    },
+  };
 }
 
 async function submitToBackendApi(formElement) {
@@ -185,8 +261,25 @@ function renderParticipantSession() {
 async function validateParticipantSession() {
   const baseUrl = getApiBaseUrl();
   const token = sessionStorage.getItem(participantTokenKey) || "";
-  if (!baseUrl || !token) {
+  if (!token) {
     clearParticipantSession();
+    renderParticipantSession();
+    return;
+  }
+
+  if (!baseUrl) {
+    const localEmail = String(token).startsWith("local:") ? String(token).slice(6) : "";
+    const accounts = readLocalParticipantAccounts();
+    const account = accounts[localEmail];
+
+    if (!localEmail || !account) {
+      clearParticipantSession();
+      renderParticipantSession();
+      return;
+    }
+
+    sessionStorage.setItem("ipdcecParticipantEmail", localEmail);
+    sessionStorage.setItem("ipdcecParticipantName", String(account.full_name || localEmail));
     renderParticipantSession();
     return;
   }
@@ -216,17 +309,25 @@ async function validateParticipantSession() {
 async function handleParticipantRegister(event) {
   event.preventDefault();
   const baseUrl = getApiBaseUrl();
-  if (!baseUrl) {
-    setParticipantAuthStatus(uiText.authUnavailable);
-    return;
-  }
 
   const formData = new FormData(event.currentTarget);
   const fullName = String(formData.get("full_name") || "").trim();
-  const email = String(formData.get("email") || "").trim();
+  const email = getNormalizedEmail(formData.get("email"));
   const password = String(formData.get("password") || "");
 
   setParticipantAuthStatus(uiText.registerSending);
+
+  if (!baseUrl) {
+    const localResult = registerLocalParticipant(fullName, email, password);
+    if (!localResult.ok) {
+      setParticipantAuthStatus(localResult.message || uiText.backendFailed);
+      return;
+    }
+
+    setParticipantAuthStatus(uiText.registerSuccess);
+    participantRegisterForm?.reset();
+    return;
+  }
 
   try {
     const response = await fetch(`${baseUrl}/api/auth/participant/register`, {
@@ -257,16 +358,26 @@ async function handleParticipantRegister(event) {
 async function handleParticipantLogin(event) {
   event.preventDefault();
   const baseUrl = getApiBaseUrl();
-  if (!baseUrl) {
-    setParticipantAuthStatus(uiText.authUnavailable);
-    return;
-  }
 
   const formData = new FormData(event.currentTarget);
-  const email = String(formData.get("email") || "").trim();
+  const email = getNormalizedEmail(formData.get("email"));
   const password = String(formData.get("password") || "");
 
   setParticipantAuthStatus(uiText.loginSending);
+
+  if (!baseUrl) {
+    const localResult = loginLocalParticipant(email, password);
+    if (!localResult.ok) {
+      setParticipantAuthStatus(localResult.message || uiText.backendFailed);
+      return;
+    }
+
+    setParticipantSession(localResult.user || {}, localResult.token || "");
+    renderParticipantSession();
+    setParticipantAuthStatus(uiText.loginSuccess);
+    participantLoginForm?.reset();
+    return;
+  }
 
   try {
     const response = await fetch(`${baseUrl}/api/auth/participant/login`, {
@@ -325,7 +436,7 @@ if (registrationForm) {
   registrationForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    if (getApiBaseUrl() && !sessionStorage.getItem(participantTokenKey)) {
+    if (participantAuthBox && !sessionStorage.getItem(participantTokenKey)) {
       if (formStatus) {
         formStatus.textContent = uiText.mustLogin;
       }
@@ -409,11 +520,11 @@ if (participantLogoutBtn) {
 }
 
 if (participantAuthBox) {
-  if (getApiBaseUrl()) {
-    setParticipantAuthStatus(uiText.mustLogin);
+  if (!getApiBaseUrl()) {
+    setParticipantAuthStatus(`${uiText.localAuthMode} ${uiText.mustLogin}`);
     validateParticipantSession();
   } else {
-    participantAuthBox.hidden = true;
-    setRegistrationLocked(false);
+    setParticipantAuthStatus(uiText.mustLogin);
+    validateParticipantSession();
   }
 }
