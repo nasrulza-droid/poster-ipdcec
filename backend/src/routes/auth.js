@@ -44,7 +44,9 @@ export function buildAuthRouter(db) {
     const normalizedEmail = String(email).trim().toLowerCase();
     const existing = await db.get("SELECT id FROM participant_users WHERE email = ?", normalizedEmail);
     if (existing) {
-      return res.status(409).json({ message: "Email already registered." });
+      return res.status(201).json({
+        message: "Registration processed. Continue by logging in.",
+      });
     }
 
     const passwordHash = await bcrypt.hash(String(password), 10);

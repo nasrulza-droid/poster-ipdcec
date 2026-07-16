@@ -63,6 +63,84 @@ const registrationLimiter = rateLimit({
   message: { message: "Too many registration attempts. Try again later." },
 });
 
+function getUploadedFileList(req) {
+  return fieldNames
+    .map((field) => req.files?.[field]?.[0])
+    .filter(Boolean);
+}
+
+function cleanupUploadedFiles(req) {
+  const files = getUploadedFileList(req);
+  for (const file of files) {
+    if (!file?.path) {
+      continue;
+    }
+    try {
+      fs.unlinkSync(file.path);
+    } catch {
+      // Ignore cleanup errors to avoid masking the original request error.
+    }
+  }
+}
+
+function detectMimeByMagic(filePath) {
+  try {
+    const fd = fs.openSync(filePath, "r");
+    const buffer = Buffer.alloc(8);
+    const bytesRead = fs.readSync(fd, buffer, 0, 8, 0);
+    fs.closeSync(fd);
+
+    if (bytesRead >= 5) {
+      const isPdf =
+        buffer[0] === 0x25 &&
+        buffer[1] === 0x50 &&
+        buffer[2] === 0x44 &&
+        buffer[3] === 0x46 &&
+        buffer[4] === 0x2d;
+      if (isPdf) {
+        return "application/pdf";
+      }
+    }
+
+    if (bytesRead >= 3) {
+      const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+      if (isJpeg) {
+        return "image/jpeg";
+      }
+    }
+
+    if (bytesRead >= 8) {
+      const isPng =
+        buffer[0] === 0x89 &&
+        buffer[1] === 0x50 &&
+        buffer[2] === 0x4e &&
+        buffer[3] === 0x47 &&
+        buffer[4] === 0x0d &&
+        buffer[5] === 0x0a &&
+        buffer[6] === 0x1a &&
+        buffer[7] === 0x0a;
+      if (isPng) {
+        return "image/png";
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function filesPassSignatureValidation(req) {
+  const files = getUploadedFileList(req);
+  return files.every((file) => {
+    if (!file?.path) {
+      return false;
+    }
+    const detectedMime = detectMimeByMagic(file.path);
+    return Boolean(detectedMime && allowedMimeTypes.has(detectedMime));
+  });
+}
+
 function parseJsonArray(value) {
   try {
     const parsed = JSON.parse(value || "[]");
@@ -137,7 +215,9 @@ async function logAdminAction(db, actorEmail, action, targetId, metadata = {}) {
   );
 }
 
-export function buildRegistrationsRouter(db) {
+export function buildRegistrationsRouter(db, options = {}) {
+  const notifyRegistration =
+    typeof options.notifyRegistration === "function" ? options.notifyRegistration : async () => {};
   const router = express.Router();
 
   const uploadFields = upload.fields(fieldNames.map((name) => ({ name, maxCount: 1 })));
@@ -152,9 +232,14 @@ export function buildRegistrationsRouter(db) {
   }, async (req, res) => {
     const body = req.body || {};
 
+    const rejectWithCleanup = (status, message) => {
+      cleanupUploadedFiles(req);
+      return res.status(status).json({ message });
+    };
+
     // Honeypot field should always be empty for real users.
     if (String(body._honey || "").trim()) {
-      return res.status(400).json({ message: "Rejected by anti-bot filter." });
+      return rejectWithCleanup(400, "Rejected by anti-bot filter.");
     }
 
     const required = [
@@ -170,12 +255,22 @@ export function buildRegistrationsRouter(db) {
 
     for (const field of required) {
       if (!String(body[field] || "").trim()) {
-        return res.status(400).json({ message: `Field ${field} is required.` });
+        return rejectWithCleanup(400, `Field ${field} is required.`);
       }
     }
 
     if (String(body.participant_type || "") === "Team" && !String(body.member_2 || "").trim()) {
-      return res.status(400).json({ message: "Field member_2 is required for team registration." });
+      return rejectWithCleanup(400, "Field member_2 is required for team registration.");
+    }
+
+    const participantEmail = String(req.user?.email || "").trim().toLowerCase();
+    if (!participantEmail) {
+      return rejectWithCleanup(401, "Unauthorized");
+    }
+
+    const submittedEmail = String(body.email || "").trim().toLowerCase();
+    if (submittedEmail && submittedEmail !== participantEmail) {
+      return rejectWithCleanup(400, "Email must match your logged-in account.");
     }
 
     const uploadedFiles = fieldNames
@@ -195,38 +290,63 @@ export function buildRegistrationsRouter(db) {
       .filter(Boolean);
 
     if (uploadedFiles.length !== fieldNames.length) {
-      return res.status(400).json({ message: "All required documents must be uploaded." });
+      return rejectWithCleanup(400, "All required documents must be uploaded.");
+    }
+
+    if (!filesPassSignatureValidation(req)) {
+      return rejectWithCleanup(400, "Unsupported file type.");
     }
 
     const id = `REG-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`;
     const now = new Date().toISOString();
 
-    await db.run(
-      `INSERT INTO registrations (
-        id, submitted_at, updated_at, status, participant_type,
-        leader_name, member_2, member_3, email, whatsapp,
-        school_name, country, poster_title, subtheme, files_json
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        now,
-        now,
-        "Baru",
-        String(body.participant_type),
-        String(body.leader_name),
-        String(body.member_2 || ""),
-        String(body.member_3 || ""),
-        String(body.email),
-        String(body.whatsapp),
-        String(body.school_name),
-        String(body.country),
-        String(body.poster_title),
-        String(body.subtheme),
-        JSON.stringify(uploadedFiles),
-      ]
-    );
+    try {
+      await db.run(
+        `INSERT INTO registrations (
+          id, submitted_at, updated_at, status, participant_type,
+          leader_name, member_2, member_3, email, whatsapp,
+          school_name, country, poster_title, subtheme, files_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          now,
+          now,
+          "Baru",
+          String(body.participant_type),
+          String(body.leader_name),
+          String(body.member_2 || ""),
+          String(body.member_3 || ""),
+          participantEmail,
+          String(body.whatsapp),
+          String(body.school_name),
+          String(body.country),
+          String(body.poster_title),
+          String(body.subtheme),
+          JSON.stringify(uploadedFiles),
+        ]
+      );
 
-    return res.status(201).json({ id, message: "Registration created." });
+      void notifyRegistration({
+        id,
+        submitted_at: now,
+        participant_type: String(body.participant_type),
+        leader_name: String(body.leader_name),
+        member_2: String(body.member_2 || ""),
+        member_3: String(body.member_3 || ""),
+        email: participantEmail,
+        whatsapp: String(body.whatsapp),
+        school_name: String(body.school_name),
+        country: String(body.country),
+        poster_title: String(body.poster_title),
+        subtheme: String(body.subtheme),
+      }).catch((error) => {
+        console.error(`[REGISTRATION_EMAIL_ERROR] ${id}: ${error?.message || "Unknown error"}`);
+      });
+
+      return res.status(201).json({ id, message: "Registration created." });
+    } catch {
+      return rejectWithCleanup(500, "Failed to save registration.");
+    }
   });
 
   router.get("/admin", requireAuth, async (_req, res) => {
